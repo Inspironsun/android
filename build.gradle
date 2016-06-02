@@ -124,34 +124,33 @@ android {
     }
 
     applicationVariants.all { variant ->
-        setOutputFileName(variant)
+        def appName = System.env.OC_APP_NAME
+        setOutputFileName(variant, appName, project.archivesBaseName)
     }
 }
 
-/// updates output file names of a given variant from parameters to format
-// [OC_APP_NAME].[versionName].[OC_BUILD_NUMBER]-[variant].apk
+// Updates output file names of a given variant from parameters to format
+// [appName].[variant.versionName].[OC_BUILD_NUMBER]-[variant.name].apk.
 //
-// OC_APP_NAME and OC_BUILD_NUMBER are read from environment variables
+// If appName parameter is undefined, original prefix is kept.
 //
-// If OC_APP_NAME is undefined, original prefix is kept
+// If OC_BUILD_NUMBER environment variable is undefined, it's not added.
 //
-// If OC_BUILD_NUMBER is undefined, it's not added
-//
-def setOutputFileName(variant) {
+// versionName is read from the variant instance.
+
+def setOutputFileName(variant, appName, archivesBaseName) {
     logger.info("Setting new name for output of variant $variant.name")
 
     def originalFile = variant.outputs[0].outputFile;
     def originalName = originalFile.name;
     logger.info("$variant.name: originalName is $originalName")
-    def originalParts = originalName.split("-")
 
     def newName = ""
 
-    def appName = System.env.OC_APP_NAME
     if (appName) {
         newName += appName
     } else {
-        newName += originalParts.first()
+        newName += archivesBaseName
     }
 
     newName += "_$variant.versionName"
@@ -161,7 +160,7 @@ def setOutputFileName(variant) {
         newName += ".$buildNumber"
     }
 
-    newName += "-" + originalParts.last()
+    newName += originalName.substring(archivesBaseName.length())
 
     logger.info("$variant.name: newName is $newName")
     variant.outputs[0].outputFile = new File(originalFile.parent, newName)
